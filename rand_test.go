@@ -5,6 +5,7 @@ package protorand
 import (
 	"testing"
 
+	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
 
 	testpb "github.com/sryoya/protorand/testdata"
@@ -103,4 +104,43 @@ func TestEmbedValues(t *testing.T) {
 	if got.Duration == nil {
 		t.Errorf("Field Duration is not set")
 	}
+}
+
+func TestEnums(t *testing.T) {
+	p := New()
+	seenEnumValues := uint32(0)
+	allValuesMask := uint32(1<<testpb.SomeEnum(0).Descriptor().Values().Len()) - 1
+	for i := 0; i < 1000; i++ {
+		res, err := p.Gen(&testpb.TestMessage{})
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		seenEnumValues |= (1 << res.(*testpb.TestMessage).SomeEnum)
+		if seenEnumValues == allValuesMask {
+			return
+		}
+	}
+	t.Errorf("all enum values were not observed")
+}
+
+func TestOneofs(t *testing.T) {
+	p := New()
+	seenOneofValues := uint32(0)
+	oneofDesc := (*testpb.TestMessage)(nil).ProtoReflect().Descriptor().Oneofs().ByName("some_one_of")
+	allValuesMask := uint32(1<<oneofDesc.Fields().Len()) - 1
+	indexesByNumber := map[protowire.Number]int{}
+	for i := 0; i < oneofDesc.Fields().Len(); i++ {
+		indexesByNumber[oneofDesc.Fields().Get(i).Number()] = i
+	}
+	for i := 0; i < 1000; i++ {
+		res, err := p.Gen(&testpb.TestMessage{})
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		seenOneofValues |= (1 << indexesByNumber[res.(*testpb.TestMessage).ProtoReflect().WhichOneof(oneofDesc).Number()])
+		if seenOneofValues == allValuesMask {
+			return
+		}
+	}
+	t.Errorf("all oneof values were not observed")
 }
