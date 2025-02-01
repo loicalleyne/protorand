@@ -1,4 +1,4 @@
-module github.com/sryoya/protorand
+module github.com/loicalleyne/protorand
 
 go 1.23
 
