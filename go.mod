@@ -1,5 +1,5 @@
 module github.com/sryoya/protorand
 
-go 1.17
+go 1.23
 
-require google.golang.org/protobuf v1.27.1
+require google.golang.org/protobuf v1.36.4
